@@ -51,3 +51,63 @@ class CalculateurRisque:
             frequences[facteur] = (comptes, moyenne)
 
         return frequences
+
+
+    @staticmethod
+    def _tranche_age(age):
+        """Retourne la tranche d'âge correspondante à l'âge donné."""
+        if age is None:
+            return None
+        resultat = pd.cut([age], bins=LIMITES_AGE, labels=NOMS_AGE)[0]      
+        return None if pd.isna(resultat) else str(resultat)
+
+    def _valeur_du_scenario(self, scenario: dict):  #scenario est un dictionnarie
+        """"Facteurs réellement forunis pas l'utilisateur (les champs vides sont ignorées)"""
+
+        valeurs = {
+            "secteur": scenario.get("secteur"),
+            "type_lieu": scenario.get("type_lieu"),
+            "jour_semaine": scenario.get("jour_semaine"),
+            "heure": scenario.get("heure"),
+            "tranche_age": scenario.get("tranche_age"),
+            "sexe": scenario.get("sexe")
+        }
+        return {cle:valeur for cle, valeur, in valeurs.items() if valeur is not None}
+    #retourne un dictionnaire
+
+    def calculer_indice(self, scenario: dict):
+        """Indice partiel = incidents de la valeur / moyenne de référence du facteur.
+        Indice globale = moyenne géométrique des indices partiels (1.0 = risque moyen)."""
+        partiels = {}
+        for facteur, valeur in self._valeur_du_scenario(scenario).items():
+            comptes, moyenne = self._frequences[facteur]
+            partiels[facteur] = float(comptes.get(valeur,0) / moyenne)
+
+        if not partiels:
+            raise ValueError("Le scénario ne contient aucun facteur.")
+
+        dominant = ""
+        ecart_max = -1
+        for facteur, valeur in partiels.items():
+            ecart = abs(valeur - 1)
+            if ecart > ecart_max:
+                ecart_max = ecart
+                dominant = facteur
+
+        return ResultatRisque(
+            indice=round(indice,2),
+            categorie=self._categorie(indice),
+            indices_partiels={f: round(v, 2) for f,v in partiels.items()},
+            facteur_dominant=dominant
+        )
+    #retourne un ResultatRisque
+
+    @staticmethod
+    def _categorie(indice : float):
+        if indice < SEUILS_FAIBLE:
+            return "faible"
+        if indice <= SEUILS_ELEVES:
+            return "moyen"
+        return "élevé"
+    #retourne un string
+    
