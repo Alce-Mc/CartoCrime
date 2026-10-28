@@ -17,6 +17,9 @@ SEUIL_REPRESENTATIVITE = 0.01
 SEUILS_FAIBLE = 0.8
 SEUILS_ELEVES = 1.2
 
+# Nombre minimal d'incidents pour que le top de crimes soit faible
+MIN_INCIDENTS_TOP = 30
+
 
 class ResultatRisque:
     def __init__(self, indice, categorie, indices_partiels, facteur_dominant):
@@ -110,4 +113,24 @@ class CalculateurRisque:
             return "moyen"
         return "élevé"
     #retourne un string
+    
+
+                            #...Le top des crimes...
+
+    def top_crimes(self, scenario: dict, n: int = 5): #n est un int = 5.
+        """Les n (pour l'instant 5) crimes les plus fréquents pour le scénario.
+        Si le scénario complet donne pas assez d'incidents, on retombe sur le secteur seul."""
+
+        masque = self.donnees["secteur"] == scenario["secteur"]
+        for facteur, valeur in self._valeur_du_scenario(scenario).items():
+            if facteur != "secteur":
+                masque &= self.donnees[facteur] == valeur
+        selection = self.donnees[masque]
+
+        if len(selection) < MIN_INCIDENTS_TOP:
+            selection = self.donnees[self.donnees["secteur"] == scenario["secteur"]]
+
+        return selection["type_crime"].value_counts().head(n)
+# Retourne une serie pandas.
+
     
