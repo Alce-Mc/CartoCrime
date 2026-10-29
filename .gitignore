@@ -12,3 +12,6 @@ dist/
 
 # Raw data
 data/raw/
+
+#le csv
+data/*.csv

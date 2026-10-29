@@ -1,7 +1,5 @@
 """Calcul de l'indice de risque relatif et du top des crimes"""
 
-from symtable import Class
-
 import numpy as np
 import pandas as pd
 
@@ -17,7 +15,7 @@ SEUIL_REPRESENTATIVITE = 0.01
 SEUILS_FAIBLE = 0.8
 SEUILS_ELEVES = 1.2
 
-# Nombre minimal d'incidents pour que le top de crimes soit faible
+# Nombre minimal d'incidents pour que le top de crimes soit fiable
 MIN_INCIDENTS_TOP = 30
 
 
@@ -40,14 +38,14 @@ class CalculateurRisque:
 
     def __init__(self, donnees):
         self.donnees = donnees.copy()  # Copie du DataFrame pour éviter de modifier l'original
-        self.donnees["tranche d'âge"] = pd.cut(self.donnees['age'], bins=LIMITES_AGE, labels=NOMS_AGE)
+        self.donnees["tranche_age"] = pd.cut(self.donnees['age'], bins=LIMITES_AGE, labels=NOMS_AGE)
         self._frequences = self._calculer_frequences()
 
     def _calculer_frequences(self):      # Ça return un dictionnaire.
         """premiere methode: pour chaque facteur, on fait nb dincidents par valeur + la moyenne de reference."""
         total = len(self.donnees)
         frequences = {}
-        for facteur in ["secteur", "type_lieu", "jour_semaine", "heure", "tranche d'âge", "sexe"]:
+        for facteur in ["secteur", "type_lieu", "jour_semaine", "heure", "tranche_age", "sexe"]:
             comptes = self.donnees[facteur].value_counts()
             representatifs = comptes[comptes >= SEUIL_REPRESENTATIVITE * total]
             moyenne = representatifs.mean() if len(representatifs) else comptes.mean()
@@ -72,10 +70,10 @@ class CalculateurRisque:
             "type_lieu": scenario.get("type_lieu"),
             "jour_semaine": scenario.get("jour_semaine"),
             "heure": scenario.get("heure"),
-            "tranche_age": scenario.get("tranche_age"),
+            "tranche_age": self._tranche_age(scenario.get("age")),  #scenario.get("age"), va trouver l'age exacte, puis tranche_age va la trasnformer en tranche.
             "sexe": scenario.get("sexe")
         }
-        return {cle:valeur for cle, valeur, in valeurs.items() if valeur is not None}
+        return {cle:valeur for cle, valeur in valeurs.items() if valeur is not None}
     #retourne un dictionnaire
 
     def calculer_indice(self, scenario: dict):
@@ -88,6 +86,11 @@ class CalculateurRisque:
 
         if not partiels:
             raise ValueError("Le scénario ne contient aucun facteur.")
+
+        produit = 1
+        for valeur in partiels.values():
+            produit *= max(valeur, 0.01)  #évite qu'un 0 mette tout l'indice à 0.
+        indice = produit ** (1/ len(partiels))
 
         dominant = ""
         ecart_max = -1
@@ -132,5 +135,3 @@ class CalculateurRisque:
 
         return selection["type_crime"].value_counts().head(n)
 # Retourne une serie pandas.
-
-    
