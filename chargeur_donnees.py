@@ -8,7 +8,7 @@ class ChargeurDonnees:
         self.chemin = chemin
         self.donnees = None
 
-    def charger():
+    def charger(self):
         #Lire seulement les colonnes utiles, car il a beaucoup de colonnes.
         df = pd.read_csv(self.chemin, usecols=["DATE OCC", "TIME OCC", "AREA NAME", "Premis Desc", "Crm Cd Desc", "Vict Age", "Vict Sex"])  
 
@@ -23,7 +23,7 @@ class ChargeurDonnees:
         #Enlever les lignes sans dates ou avec des heures impossibles.
         df = df.dropna(subset=["date", "heure"])
         df = df[(df["heure"] >= 0) & (df["heure"] <= 23)].copy()
-        df["heure"] = df["huere"].astype(int)
+        df["heure"] = df["heure"].astype(int)
 
         #Mettre les ages invalides au vide, mais on garde la ligne
         df["age"] = pd.to_numeric(df["age"], errors="coerce")
@@ -35,9 +35,15 @@ class ChargeurDonnees:
         #On remplace les valeurs manquantes seulement dans les colonnes de texte
         colonnes_texte = ["secteur", "type_lieu", "type_crime"]
         df[colonnes_texte] = df[colonnes_texte].fillna("INCONNU")
-        
 
-    def secteurs():
-        sorted(df["secteur"].unique())
+        #Pour garder seulement les colonnes qu'on a besoin dans le calculateur de risque.
+        df = df[["date", "jour_semaine", "heure", "secteur", "type_lieu", "type_crime", "age", "sexe"]]
 
-    def types_lieux():
+        self.donnees = df.reset_index(drop=True)
+        return self.donnees
+
+    def secteurs(self):
+        return sorted(self.donnees["secteur"].unique())
+
+    def types_lieux(self):
+        return sorted(self.donnees["type_lieu"].unique())
