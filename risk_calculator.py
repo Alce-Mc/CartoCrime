@@ -12,11 +12,14 @@ NOMS_AGE = ['0-17','18-29','30-44','45-59','60+']
 SEUIL_REPRESENTATIVITE = 0.01
 
 # Seuils des catégories de risque (à ajuster)
-SEUILS_FAIBLE = 0.8
-SEUILS_ELEVES = 1.2
+SEUILS_FAIBLE = 0.90
+SEUILS_ELEVES = 1.02
 
 # Nombre minimal d'incidents pour que le top de crimes soit fiable
 MIN_INCIDENTS_TOP = 30
+
+# C'est les facteurs qu'on compare à l'intérieur du secteur et non en globalité.
+FACTEURS_DANS_SECTEUR = ["jour_semaine", "heure", "tranche_age", "sexe"]
 
 
 class ResultatRisque:
@@ -39,19 +42,32 @@ class CalculateurRisque:
     def __init__(self, donnees):
         self.donnees = donnees.copy()  # Copie du DataFrame pour éviter de modifier l'original
         self.donnees["tranche_age"] = pd.cut(self.donnees['age'], bins=LIMITES_AGE, labels=NOMS_AGE)
-        self._frequences = self._calculer_frequences()
+        self._ref_secteur = self._calculer_reference(self.donnees, "secteur")       # C'est la référence du secteur qui est calculé sur tout le fichier (un secteur vs un autre)
+        self._refs_par_secteur = {}   # C'est la référence des facteurs qui sont calculés une fois par secteur et stocker ici.
 
-    def _calculer_frequences(self):      # Ça return un dictionnaire.
-        """premiere methode: pour chaque facteur, on fait nb dincidents par valeur + la moyenne de reference."""
+    def _calculer_reference(self, donnees, facteur):      # Ça return un dictionnaire.
+        """Pour un facteur dans un ensemble de données: nb d'incidents par valeur + moyenne de référence."""
         total = len(self.donnees)
-        frequences = {}
-        for facteur in ["secteur", "type_lieu", "jour_semaine", "heure", "tranche_age", "sexe"]:
-            comptes = self.donnees[facteur].value_counts()
-            representatifs = comptes[comptes >= SEUIL_REPRESENTATIVITE * total]
-            moyenne = representatifs.mean() if len(representatifs) else comptes.mean()
-            frequences[facteur] = (comptes, moyenne)
+        comptes = donnees[facteur].value_counts()
+        if facteur == "heure" and 12 in comptes.index:
+            comptes = comptes.astype(float)
+            comptes[12] = (comptes.get(11, 0) + comptes.get(13, 0)) / 2
+        # J'ai remarqué qu'il avait un grand pic de crimes à exactement midi, que je trouvais très anormal. Alors, on remplace le compte de 12h pour la moyenne de 11 et 13h.
 
-        return frequences
+        representatifs = comptes[comptes >= SEUIL_REPRESENTATIVITE *total]
+        moyenne = representatifs.mean() if len(representatifs) else comptes.mean()
+
+        return comptes, moyenne
+
+    def _reference_du_secteur(self, secteur):
+        """Références de chaque facteur calculés seulement avec les inicdents de ce secteur ci."""
+        if secteur not in self._refs_par_secteur:
+            sous_ensemble = self.donnees[self.donnees["secteur"] == secteur]
+            references = {}
+            for facteur in FACTEURS_DANS_SECTEUR:
+                references[facteur] = self._calculer_reference(sous_ensemble, facteur)
+            self._refs_par_secteur[secteur] = references
+        return self._refs_par_secteur[secteur]
 
 
     @staticmethod
@@ -79,13 +95,23 @@ class CalculateurRisque:
     def calculer_indice(self, scenario: dict):
         """Indice partiel = incidents de la valeur / moyenne de référence du facteur.
         Indice globale = moyenne géométrique des indices partiels (1.0 = risque moyen)."""
-        partiels = {}
-        for facteur, valeur in self._valeur_du_scenario(scenario).items():
-            comptes, moyenne = self._frequences[facteur]
-            partiels[facteur] = float(comptes.get(valeur,0) / moyenne)
 
-        if not partiels:
-            raise ValueError("Le scénario ne contient aucun facteur.")
+        valeurs = self._valeur_du_scenario(scenario)
+        if "secteur" not in valeurs:
+            raise ValueError(f"Le secteur est obligatoire")
+
+        secteur = valeurs["secteur"]
+        comptes_secteurs, moyenne_secteurs = self._ref_secteur
+        if secteur not in comptes_secteurs.index:
+            raise ValueError(f"Secteur inconnu : {secteur}")
+
+        partiels = {"secteur": float(comptes_secteurs[secteur] / moyenne_secteurs)}
+
+        references = self._reference_du_secteur(secteur)
+        for facteur, valeur in valeurs.items():
+            if facteur in references:               # Ici on ignore type_lieu et le secteur
+                comptes, moyenne = references[facteur]
+                partiels[facteur] = float(comptes.get(valeur, 0) / moyenne)
 
         produit = 1
         for valeur in partiels.values():
@@ -101,10 +127,10 @@ class CalculateurRisque:
                 dominant = facteur
 
         return ResultatRisque(
-            indice=round(indice,2),
-            categorie=self._categorie(indice),
-            indices_partiels={f: round(v, 2) for f,v in partiels.items()},
-            facteur_dominant=dominant
+            indice = round(indice,2),
+            categorie = self._categorie(indice),
+            indices_partiels = {f: round(v, 2) for f,v in partiels.items()},
+            facteur_dominant = dominant
         )
     #retourne un ResultatRisque
 
