@@ -7,5 +7,5 @@ app = customtkinter.CTk()
 app.geometry("900*900")
 
 button = customtkinter.CTkButton(app, text="my button", command=button_callback)
-button.pack()
+
 app.mainloop()
