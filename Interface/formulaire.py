@@ -44,7 +44,7 @@ class Formulaire(ctk.CTkFrame):
         #Validation des paramètres
         try:
             age = int(self.age.get())
-            if not 1 <= age <= 119:
+            if not 1 <= age <= 100:
                 raise ValueError
         except ValueError:
             self.erreur.configure(text="Âge invalide (entre 1 et 119)")
