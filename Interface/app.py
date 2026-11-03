@@ -7,9 +7,9 @@ class App (ctk.CTk):
     def __init__(self):
         super().__init__()
         #condition initiales
-        self.title("CartoCrime 0.1")
-        self.geometry("1100x600")
-        self.minsize(800, 500)
+        self.title("CartoCrime 0.5")
+        self.geometry("800x500")
+        self.minsize(400, 300)
         self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)

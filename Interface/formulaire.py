@@ -11,7 +11,7 @@ class Formulaire(ctk.CTkFrame):
         self.on_analyser = on_analyser
 
         #Création des champs d'entrées
-        ctk.CTkLabel(self, text="Données",  font = ("Segoe UI", 20, "bold")).grid(row = 1, column = 0, sticky = 'w', pady =(10, 0) )
+        ctk.CTkLabel(self, text="Scénario",  font = ("Segoe UI", 20, "bold")).grid(row = 1, column = 0, pady =(10, 0) )
         self.age = self._ajouter_champ("Âge", ctk.CTkEntry(self, placeholder_text="ex: 19"))
         self.sexe = self._ajouter_champ("Sexe", ctk.CTkSegmentedButton(self, values=list(SEXES.keys())))
         self.sexe.set("Femme")
