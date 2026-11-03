@@ -1,9 +1,13 @@
-import pandas as pd
+from chargeur_donnees import ChargeurDonnees
 from graphiques import Graphiques
 
-donnees = pd.DataFrame({
-    "heure": [8, 8, 9, 12, 12, 12, 18, 18, 22]
-})
+chargeur = ChargeurDonnees("export.csv")
+donnees = chargeur.charger()
 
-graphiques = Graphiques(donnees)
-graphiques.par_heure()
+print("Nombre de crimes chargés :", len(donnees))
+
+masque = donnees["secteur"] == "Hollywood"
+donnees_secteur = donnees[masque]
+
+graphiques = Graphiques(donnees_secteur)
+graphiques.carte_chaleur()
