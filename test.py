@@ -10,4 +10,4 @@ masque = donnees["secteur"] == "Hollywood"
 donnees_secteur = donnees[masque]
 
 graphiques = Graphiques(donnees_secteur)
-graphiques.carte_chaleur()
+graphiques.par_age()
