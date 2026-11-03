@@ -55,7 +55,7 @@ class Formulaire(ctk.CTkFrame):
         #Construire le scénario puis le rendre accessible à app.py
         scenario = {
             "secteur": self.secteur.get(),        # "Hollywood"
-            "jour": self.jour.get(),              # "Lundi"
+            "jour_semaine": self.jour.get(),      # "Lundi"
             "heure": int(self.heure.get()),       # 17
             "age": age,                           # 19
             "sexe": SEXES[self.sexe.get()],       # "F"
