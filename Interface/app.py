@@ -1,11 +1,18 @@
 import customtkinter as ctk
 from interface.formulaire import Formulaire
 from interface.resultats import Resultats
+from chargeur_donnees import ChargeurDonnees
+from risk_calculator import CalculateurRisque
 
 #Classe App, arrange et presente l'interface pratique.
 class App (ctk.CTk):
     def __init__(self):
         super().__init__()
+
+        #importation et nettoyage des données
+        chargeur = ChargeurDonnees("data/export.csv")
+        self.calculateur = CalculateurRisque(chargeur.charger())
+
         #condition initiales
         self.title("CartoCrime 0.5")
         self.geometry("800x500")
@@ -22,4 +29,9 @@ class App (ctk.CTk):
 
     #fonction d'analyse du scénario
     def analyser(self, scenario):
-        self.right_panel.afficher(scenario)
+        try:
+            resultat = self.calculateur.calculer_indice(scenario)
+            top = self.calculateur.top_crimes(scenario)
+            self.right_panel.afficher(resultat, top)
+        except ValueError as e:
+            print("Erreur :", e)

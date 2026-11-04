@@ -47,7 +47,7 @@ class Formulaire(ctk.CTkFrame):
             if not 1 <= age <= 100:
                 raise ValueError
         except ValueError:
-            self.erreur.configure(text="Âge invalide (entre 1 et 119)")
+            self.erreur.configure(text="Âge invalide (entre 1 et 100)")
             return
         self.erreur.configure(text="")
 
@@ -55,7 +55,7 @@ class Formulaire(ctk.CTkFrame):
         #Construire le scénario puis le rendre accessible à app.py
         scenario = {
             "secteur": self.secteur.get(),        # "Hollywood"
-            "jour_semaine": self.jour.get(),      # "Lundi"
+            "jour_semaine":JOURS.index(self.jour.get()),      # "Lundi -> 0"
             "heure": int(self.heure.get()),       # 17
             "age": age,                           # 19
             "sexe": SEXES[self.sexe.get()],       # "F"
