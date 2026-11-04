@@ -1,6 +1,13 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 from risk_calculator import LIMITES_AGE, NOMS_AGE
+from matplotlib.figure import Figure
+
+FOND = "#2b2b2b"
+TEXTE = "#dce4ee"
+ACCENT = "#3b82f6"
+SURLIGNE = "#ef4444"
+JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
 
 class Graphiques:
     def __init__(self, donnees):
@@ -9,14 +16,15 @@ class Graphiques:
     def par_heure(self):
         nombres = self.donnees["heure"].value_counts()
         nombres = nombres.reindex(range(24), fill_value=0)
-        plt.figure()
-        plt.bar(nombres.index, nombres.values)
-        plt.xlabel("Heure")
-        plt.ylabel("Nombre de crimes rapportés")
-        plt.title("Nombre de crimes selon l’heure")
-        plt.xticks(range(24))
-        plt.tight_layout()
-        plt.show()
+        fig = Figure(figsize = (6,3))
+        ax = fig.add_subplot()
+        ax.bar(nombres.index, nombres.values)
+        ax.set_xlabel("Heure")
+        ax.set_ylabel("Nombre de crimes rapportés")
+        ax.set_title("Nombre de crimes selon l’heure")
+        ax.set_xticks(range(24))
+        fig.tight_layout()
+        return fig
     
     def carte_chaleur(self):
         comptes = self.donnees.groupby(["jour_semaine", "heure"]).size()

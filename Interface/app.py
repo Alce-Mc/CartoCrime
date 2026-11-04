@@ -3,6 +3,7 @@ from interface.formulaire import Formulaire
 from interface.resultats import Resultats
 from chargeur_donnees import ChargeurDonnees
 from risk_calculator import CalculateurRisque
+from graphiques import Graphiques
 
 #Classe App, arrange et presente l'interface pratique.
 class App (ctk.CTk):
@@ -10,8 +11,9 @@ class App (ctk.CTk):
         super().__init__()
 
         #importation et nettoyage des données
-        chargeur = ChargeurDonnees("data/export.csv")
-        self.calculateur = CalculateurRisque(chargeur.charger())
+        donnees = ChargeurDonnees("data/export.csv").charger()
+        self.calculateur = CalculateurRisque(donnees)
+        self.graphiques = Graphiques(donnees)
 
         #condition initiales
         self.title("CartoCrime 0.5")
@@ -32,6 +34,7 @@ class App (ctk.CTk):
         try:
             resultat = self.calculateur.calculer_indice(scenario)
             top = self.calculateur.top_crimes(scenario)
-            self.right_panel.afficher(resultat, top)
+            figure = self.graphiques.par_heure()
+            self.right_panel.afficher(resultat, top, figure)
         except ValueError as e:
             print("Erreur :", e)
