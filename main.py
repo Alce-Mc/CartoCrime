@@ -1,5 +1,5 @@
 import customtkinter as ctk
-from interface.app import App
+from Interface.app import App
 
 if __name__ == "__main__":
     ctk.set_appearance_mode("dark")
