@@ -16,7 +16,7 @@ class App (ctk.CTk):
         self.graphiques = Graphiques(donnees)
 
         #condition initiales
-        self.title("CartoCrime 0.5")
+        self.title("CartoCrime 1.0")
         self.geometry("1200x700")
         self.minsize(400, 300)
         self.grid_columnconfigure(0, weight=0)
