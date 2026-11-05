@@ -1,4 +1,6 @@
 import customtkinter as ctk
+from tkinter import filedialog
+from exportation import Exportation
 from Interface.formulaire import Formulaire
 from Interface.resultats import Resultats
 from chargeur_donnees import ChargeurDonnees
@@ -12,6 +14,7 @@ class App (ctk.CTk):
 
         #importation et nettoyage des données
         donnees = ChargeurDonnees("data/export.csv").charger()
+        self.donnees = donnees
         self.calculateur = CalculateurRisque(donnees)
         self.graphiques = Graphiques(donnees)
 
@@ -39,6 +42,10 @@ class App (ctk.CTk):
         self.right_panel  = Resultats(self, figures)     
         self.left_panel.grid(row=0, column=0, sticky="ns", padx=15, pady=15)
         self.right_panel.grid(row=0, column=1, sticky="nsew", padx=(0, 15), pady=15)
+        self.bouton_export = ctk.CTkButton(
+            self.left_panel, text="Exporter le rapport", state="disabled"
+        )
+        self.bouton_export.grid(column=0, padx=20, pady=10)
 
     #fonction d'analyse du scénario
     def analyser(self, scenario):
@@ -47,5 +54,19 @@ class App (ctk.CTk):
             top = self.calculateur.top_crimes(scenario)
             figure = self.graphiques.par_heure()
             self.right_panel.afficher(resultat, top, figure)
+            self.bouton_export.configure(
+                state="normal",
+                command=lambda: self.exporter_rapport(scenario, resultat, top)
+            )
         except ValueError as e:
             print("Erreur :", e)
+
+    def exporter_rapport(self, scenario, resultat, top):
+        chemin = filedialog.asksaveasfilename(
+            title="Enregistrer le rapport",
+            initialfile="rapport_cartocrime.txt",
+            defaultextension=".txt",
+            filetypes=[("Fichier texte", "*.txt")]
+        )
+        if chemin:
+            Exportation().exporter(chemin, scenario, resultat, top, self.donnees)
