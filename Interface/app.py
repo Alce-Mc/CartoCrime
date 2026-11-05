@@ -30,8 +30,8 @@ class App (ctk.CTk):
         #Création des figures
         graphiques = Graphiques(donnees)
         figures = {
-            "Par heure": graphiques.par_heure(),
             "Jour × heure": graphiques.carte_chaleur(),
+            "Par heure": graphiques.par_heure(),
             "Par secteur": graphiques.par_secteur(),
             "Par lieu": graphiques.par_lieu(),
             "Par âge": graphiques.par_age(),
@@ -52,7 +52,7 @@ class App (ctk.CTk):
         try:
             resultat = self.calculateur.calculer_indice(scenario)
             top = self.calculateur.top_crimes(scenario)
-            figure = self.graphiques.par_heure()
+            figure = self.graphiques.carte_chaleur(scenario)
             self.right_panel.afficher(resultat, top, figure)
             self.bouton_export.configure(
                 state="normal",

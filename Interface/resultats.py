@@ -13,6 +13,7 @@ class Resultats(ctk.CTkFrame):
         self.carte = ctk.CTkFrame(self, corner_radius=20, fg_color="gray25")
         self.carte.grid(row=0, column=0, sticky="ew", padx=30, pady=(30, 15))
         self.carte.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
 
         #texte de l'indice sur la carte
         self.indice = ctk.CTkLabel(self.carte, text="—", font=("Segoe UI", 20,), text_color="white")
@@ -54,5 +55,7 @@ class Resultats(ctk.CTkFrame):
             phrase = f"{ecart} % plus bas que la moyenne  ({resultat.indice}×)"
 
         self.indice.configure(text=phrase)
+        self._placer_figure("Jour × heure", figure)
+        self.onglets.set("Jour × heure")
         
 
