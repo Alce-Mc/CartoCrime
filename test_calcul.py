@@ -40,13 +40,22 @@ print(brut["TIME OCC"].value_counts().head(10))
 def centiles(ages):
     indices = []
     for secteur in secteurs:
-        for heure in range(24):
-            for age in ages:
-                for sexe in ["F", "M"]:
-                    s = {"secteur": secteur, "heure": heure, "age": age, "sexe": sexe}
-                    indices.append(calc.calculer_indice(s).indice)
+        for jour in range(7):
+            for heure in range(24):
+                for age in ages:
+                    for sexe in ["F", "M"]:
+                        s = {
+                            "secteur": secteur,
+                            "jour_semaine": jour,
+                            "heure": heure, 
+                            "age": age,
+                            "sexe": sexe
+                        }
+                        resultat = calc.calculer_indice(s)
+                        indices.append(resultat.indice)
 
     serie = pd.Series(indices)
+    
     print("Ages", ages)
     print(serie.describe())
     print("33e centile :", serie.quantile(0.33), "| 67e centile :", serie.quantile(0.67))

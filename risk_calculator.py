@@ -1,9 +1,8 @@
 """Calcul de l'indice de risque relatif et du top des crimes"""
 
-import numpy as np
 import pandas as pd
 
-LIMITES_AGE = [0,17,29,44,59,100]
+LIMITES_AGE = [0, 17, 29, 44, 59, 100]
 NOMS_AGE = ['0-17','18-29','30-44','45-59','60+']
 
 # Une seule valeur de seuil est utilisée pour déterminer si un crime est représentatif ou non.
@@ -11,14 +10,15 @@ NOMS_AGE = ['0-17','18-29','30-44','45-59','60+']
 # puis la moyenne sera faussée. On choisit donc un seuil de représentativité pour ne garder que les crimes qui ont été observés au moins 1% du temps.
 SEUIL_REPRESENTATIVITE = 0.01
 
-# Seuils des catégories de risque (à ajuster)
-SEUILS_FAIBLE = 0.90
-SEUILS_ELEVES = 1.02
+# Seuils déterminés par les tests dans test_calcul.py pour déterminer la catégorie de risque.
+SEUILS_FAIBLE = 0.91
+SEUILS_ELEVES = 1.06
 
 # Nombre minimal d'incidents pour que le top de crimes soit fiable
 MIN_INCIDENTS_TOP = 30
 
 # C'est les facteurs qu'on compare à l'intérieur du secteur et non en globalité.
+# Le type de lieu est exclu de l'indice, car certaines catégories de lieux sont très rares et donc pas représentatives. Le secteur est exclu, car il est déjà pris en compte dans l'indice global.
 FACTEURS_DANS_SECTEUR = ["jour_semaine", "heure", "tranche_age", "sexe"]
 
 
@@ -47,7 +47,7 @@ class CalculateurRisque:
 
     def _calculer_reference(self, donnees, facteur):      # Ça return un dictionnaire.
         """Pour un facteur dans un ensemble de données: nb d'incidents par valeur + moyenne de référence."""
-        total = len(self.donnees)
+        total = len(donnees)
         comptes = donnees[facteur].value_counts()
         if facteur == "heure" and 12 in comptes.index:
             comptes = comptes.astype(float)
@@ -73,8 +73,17 @@ class CalculateurRisque:
     @staticmethod
     def _tranche_age(age):
         """Retourne la tranche d'âge correspondante à l'âge donné."""
-        if age is None:
+        if age is None or age == "":
             return None
+
+        try:
+            age = int(age)
+        except (ValueError, TypeError):
+            raise ValueError("L'âge doit être un nombre entier.")
+
+        if age < 1 or age > 100:
+            raise ValueError("L'âge doit être entre 1 et 100.")
+
         resultat = pd.cut([age], bins=LIMITES_AGE, labels=NOMS_AGE)[0]      
         return None if pd.isna(resultat) else str(resultat)
 
@@ -89,7 +98,9 @@ class CalculateurRisque:
             "tranche_age": self._tranche_age(scenario.get("age")),  #scenario.get("age"), va trouver l'age exacte, puis tranche_age va la trasnformer en tranche.
             "sexe": scenario.get("sexe")
         }
-        return {cle:valeur for cle, valeur in valeurs.items() if valeur is not None}
+        return {cle:valeur
+                 for cle, valeur in valeurs.items()
+                   if valeur is not None}
     #retourne un dictionnaire
 
     def calculer_indice(self, scenario: dict):
@@ -97,27 +108,47 @@ class CalculateurRisque:
         Indice globale = moyenne géométrique des indices partiels (1.0 = risque moyen)."""
 
         valeurs = self._valeur_du_scenario(scenario)
+
         if "secteur" not in valeurs:
             raise ValueError(f"Le secteur est obligatoire")
 
         secteur = valeurs["secteur"]
         comptes_secteurs, moyenne_secteurs = self._ref_secteur
+
         if secteur not in comptes_secteurs.index:
             raise ValueError(f"Secteur inconnu : {secteur}")
 
+        # Vérifier que la référence globale est valide
+        if pd.isna(moyenne_secteurs) or moyenne_secteurs <= 0:
+            raise ValueError(f"Référence globale invalide pour le secteur {secteur}")
+
         partiels = {"secteur": float(comptes_secteurs[secteur] / moyenne_secteurs)}
 
+        # Calculer les facteurs à l'intérieur du secteur
         references = self._reference_du_secteur(secteur)
+
         for facteur, valeur in valeurs.items():
             if facteur in references:               # Ici on ignore type_lieu et le secteur
                 comptes, moyenne = references[facteur]
-                partiels[facteur] = float(comptes.get(valeur, 0) / moyenne)
+
+                # Ignorer le facteur si sa moyenne est invalide.
+                if pd.isna(moyenne) or moyenne <= 0:
+                    continue
+
+                nb_incidents = comptes.get(valeur, 0)
+
+                # Aucune observation ne permet pas de conclure que le risque est nécessairement faible.
+                if nb_incidents == 0:
+                    continue
+
+                partiels[facteur] = float(nb_incidents / moyenne)
 
         produit = 1
         for valeur in partiels.values():
             produit *= max(valeur, 0.01)  #évite qu'un 0 mette tout l'indice à 0.
         indice = produit ** (1/ len(partiels))
 
+        # Déterminer le facteur le plus éloigné de 1.
         dominant = ""
         ecart_max = -1
         for facteur, valeur in partiels.items():
