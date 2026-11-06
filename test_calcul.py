@@ -13,12 +13,12 @@ print(len(df), "lignes,", len(secteurs), "secteurs\n")
 print(secteurs)
 
 scenario = {
-    "secteur": "Harbor",
-    "heure": 12,
-    "age": 45,
-    "sexe" : "F",
+    "secteur": "Hollywood",
+    "heure": 23,
+    "age": 25,
+    "sexe" : "H",
     #"type_lieu": "STREET",
-    #"jour_semaine": 4
+    "jour_semaine": 5
 }
 
 resultat = calc.calculer_indice(scenario)
@@ -36,7 +36,7 @@ brut = pd.read_csv("data/export.csv", usecols=["TIME OCC"])
 print(brut["TIME OCC"].value_counts().head(10))
 """
 
-# Tests pour trouver les meilleurs seuils pour mon indice. Cest comme ca que jai trouvé 0.77 et 0.95
+# Tests pour trouver les meilleurs seuils pour mon indice. Cest comme ca que j'ai trouvé 0.91 et 1.06
 def centiles(ages):
     indices = []
     for secteur in secteurs:
